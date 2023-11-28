@@ -1,0 +1,67 @@
+{
+  "cli": {
+    "fmtVersion": 3
+  },
+  "name": "DU-logger-viewer",
+  "description": "DU Player logger and data viewer",
+  "sourcePath": "lua",
+  "outputPath": "out",
+  "libs": [],
+  "builds": {
+    "logger": {
+      "name": "logger",
+      "type": "control",
+      "slots": {
+        "0": {
+            "name": "core",
+            "type": "core"
+        },
+        "1": {
+            "name": "orgdata",
+            "type": "databank"
+        },
+        "2": {
+            "name": "sysdata",
+            "type": "databank"
+        }    
+      }
+    },
+    "viewer": {
+      "name": "viewer",
+      "type": "control",
+      "slots": {
+        "0": {
+            "name": "screen",
+            "type": "screen"
+        },
+        "1": {
+            "name": "sysdata",
+            "type": "databank"
+        }
+      }
+    },
+    "viewer.screen": {
+      "name": "viewer.screen",
+      "type": "screen",
+      "slots": {}
+    }
+  },
+  "targets": {
+    "development": {
+      "name": "development",
+      "minify": false,
+      "handleErrors": false
+    },
+    "release": {
+      "name": "release",
+      "minify": true,
+      "handleErrors": false
+    }
+  },
+  "internalPaths": [
+    "autoconf/",
+    "cpml/",
+    "pl/",
+    "utils/event"
+  ]
+}

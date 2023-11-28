@@ -1,0 +1,1 @@
+du-lua build development --copy=development/viewer

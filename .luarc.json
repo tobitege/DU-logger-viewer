@@ -1,0 +1,32 @@
+{
+	"languageMode": "strict",
+	"lint": {"*": true, "LocalUnused": false},
+	"lintErrors": true,
+	"globals": [
+		"construct",
+		"library",
+		"player",
+		"system",
+		"unit"
+	],
+    "diagnostics.globals": [
+        "system",
+        "json",
+        "utils",
+        "vec3",
+        "unit",
+        "core",
+        "library",
+        "construct",
+        "constants",
+        "traceback",
+        "player"
+    ],
+    "completion.autoRequire": false,
+    "workspace": {
+        "library": [
+          "./lua"
+        ]
+    },
+    "runtime.version": "Lua 5.2"
+}

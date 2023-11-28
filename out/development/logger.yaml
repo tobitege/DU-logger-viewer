@@ -1,0 +1,477 @@
+slots:
+  "0":
+    name: core
+    class: CoreUnit
+    select: null
+    type:
+      events: []
+      methods: []
+  "1":
+    name: orgdata
+    class: DataBankUnit
+    select: null
+    type:
+      events: []
+      methods: []
+  "2":
+    name: sysdata
+    class: DataBankUnit
+    select: null
+    type:
+      events: []
+      methods: []
+  "-5":
+    name: library
+    class: null
+    select: null
+    type:
+      events: []
+      methods: []
+  "-4":
+    name: system
+    class: null
+    select: null
+    type:
+      events: []
+      methods: []
+  "-3":
+    name: player
+    class: null
+    select: null
+    type:
+      events: []
+      methods: []
+  "-2":
+    name: construct
+    class: null
+    select: null
+    type:
+      events: []
+      methods: []
+  "-1":
+    name: unit
+    class: null
+    select: null
+    type:
+      events: []
+      methods: []
+handlers:
+  - key: 1
+    filter:
+      slotKey: -5
+      signature: onStart()
+      args: []
+    code: >-
+      ;(function()
+
+      local a={}local b=0;function library.addEventHandlers(c)if not c or c.onEvent and c.triggerEvent then return false end;b=b+1;a[b]=c;local d,e,f='table','function','thread'if d~=type(c)then error('You can only add event handlers to table objects!')end;local g={}local function h(c)local i=type(c)return e==i or d==i and h(getmetatable(c).__call)or f==i end;c.onEvent=function(self,j,k,l)if not h(k)then error('Event handler must be a function, a callable object or a thread!')end;l=l or self;if d~=type(l)then error('The value of self must be a table!')end;if not g[j]then g[j]={_=0}end;local m=f==type(k)and function(...)coroutine.resume(k,...)end or k;local k=g[j]local n=k._+1;k[n]={m,l}k._=n;return n end;c.clearEvent=function(self,j,o)if g[j]and g[j][o]then g[j][o]=nil end end;c.clearAllEvents=function(self)g={}end;c.triggerEvent=function(self,j,...)local p=g[j]if p then for q=1,p._ do local k=p[q]if k then k[1](k[2],...)end end end end;return true end;function library.clearAllEventHandlers()for q=1,b do local c=a[q]if c and c.clearAllEvents then c:clearAllEvents()end end end
+
+      end)()
+  - key: 2
+    filter:
+      slotKey: -5
+      signature: onStart()
+      args: []
+    code: >-
+      ;(function()
+
+      local a=DULibrary or{}function a.getLinks(b,c)local d={}if not b then b={}end;for e,f in pairs(unit.getOutPlugs())do local g=unit[f.name]if'table'==type(g)and'function'==type(g.getClass)then local h=true;for i,j in pairs(b)do if not('function'==type(g[i])and j==g[i]():sub(1,#j))then h=false;break end end;if h then if c then table.insert(d,g)else d[f.name]=g end end end end;return d end;function a.getLinksByClass(k,c)return a.getLinks({getClass=k},c)end;function a.getLinkByClass(k)return a.getLinksByClass(k,true)[1]end;function a.getCoreUnit()return a.getLinkByClass('CoreUnit')end;function a.getLinkByName(l)local m=a.getCoreUnit()if not m then error('getLinkByName requires a linked CoreUnit to work')end;local d=a.getLinks()for n,o in pairs(d)do if l==m.getElementNameById(o.getLocalId())then return o end end end
+
+      end)()
+  - key: 3
+    filter:
+      slotKey: -5
+      signature: onStart()
+      args: []
+    code: >-
+      package.preload['DU-logger-viewer:globals.lua']=(function()
+
+      -- Initialize globals and constants
+
+      Config = { core = nil, c_required=true, databanks = {}, db_required=true, screens = {}, s_required=true }
+
+      DEBUG = false
+
+      INGAME = system ~= nil
+
+
+      if not INGAME then
+
+          function traceback(o)
+              if o then P(tostring(o)) end
+          end
+      else
+          --require 'mockfuncs'
+          print=system.print
+      end
+
+      P=print
+
+      end)
+
+      package.preload['DU-logger-viewer:startup.lua']=(function()
+
+      -- startup for initial config like slots detection
+
+      local status, err=false,nil
+
+      if INGAME then
+          ---@diagnostic disable-next-line: undefined-global
+          status, err, _ = xpcall(function()
+              if Config.c_required then
+                  Config.core = library.getCoreUnit()
+              end
+              if Config.db_required then
+                  Config.databanks = library.getLinksByClass('DataBank', true) -- true is important!
+              end
+              if Config.s_required then
+                  Config.screens = library.getLinksByClass('Screen', true)
+              end
+          end, traceback)
+          if not status then
+              P("Error in Link Detection:\n" .. err)
+              unit.exit()
+              return
+          end
+      else
+          -- use mocks
+          Config.core = unit.core
+          Config.databanks =  { unit.databank }
+          Config.screens =  { unit.screen }
+      end
+
+
+      if #Config.databanks > 0 then
+          local plural = ""
+          if #Config.databanks > 1 then plural = "s" else plural = " '"..Config.databanks[1].getName().."'" end
+          P(#Config.databanks .. " databank" .. plural .. " connected.")
+      else
+          P("[E] DataBank not found.")
+      end
+
+      if #Config.screens > 0 then
+          local plural = ""
+          if #Config.screens > 1 then plural = "s" end
+          P(#Config.screens .. " screen" .. plural .. " connected.")
+      end
+
+      end)
+
+      package.preload['DU-logger-viewer:logger-library.lua']=(function()
+
+      function EndsWith(s, suffix)
+          if not s or not suffix then return false end
+          return string.sub(s, -#suffix) == suffix
+      end
+
+
+      function Rtrim(s)
+          local res, _ = string.gsub(s, "%s+$", "")
+          return res
+      end
+
+
+      function RtrimChar(s,char)
+          if not s or not char then return s end
+          while #s > 0 and EndsWith(s, char) do
+              s = string.sub(s,1,#s - #char)
+          end
+          return s
+      end
+
+
+      function DumpTable(o)
+         -- omitt any spaces in s!
+         if type(o) == 'table' then
+            local s = '{'
+            for k,v in pairs(o) do
+               if type(k) ~= 'number' then k = '"'..k..'"' end
+               s = s .. '['..k..']=' .. DumpTable(v) .. ','
+            end
+            s = RtrimChar(s,",")
+            return s .. '}'
+         else
+            return tostring(o)
+         end
+      end
+
+
+      function TableConstructor(plname,plmass,plvol,plvolmax,plorgs,logtime,logtimeoff,plwpos,plwvelo,plparent,plisseated,plseatid,plsprint,pljetpack,plheadlight)
+          local t = {name = plname, mass = plmass, volume = plvol, volumemax = plvolmax,
+              orgs = plorgs, time = logtime, timeoffset = logtimeoff, pos = plwpos,
+              velo = plwvelo, parent = plparent, seated = plisseated, seatid = plseatid,
+              sprint = plsprint, jetpack = pljetpack, headlight = plheadlight }
+          return t
+      end
+
+      end)
+
+      package.preload['DU-logger-viewer:logger-main.lua']=(function()
+
+      ---@diagnostic disable: param-type-mismatch
+
+      --local P=system.print
+
+
+      local klist = SysData.getKeyList()
+
+      if DEBUG and klist then
+          P("SysData keys:\r\n"..DumpTable(klist))
+      end
+
+
+      local MplayerID = player.getId()
+
+      local MplayerName = player.getName()
+
+      local MplayerMass = player.getNanopackMass()
+
+      local MplayerVolume = player.getNanopackVolume()
+
+      local MplayerMaxVolume = player.getNanopackMaxVolume()
+
+      local MplayerWrldPos = player.getWorldPosition()
+
+      local MplayerWrldVelo = player.getWorldVelocity()
+
+      local MplayerOrgIDs = player.getOrgIds()
+
+      local MplayerTime = system.getUtcTime()
+
+      local MplayerTimeOffset = system.getUtcOffset()
+
+
+      local MplayerParentID = player.getParent()
+
+      local MplayerIsSeated = player.isSeated()
+
+      local MplayerSeatID = player.getSeatId()
+
+      local MplayerSprinting = player.isSprinting()
+
+      local MplayerIsJetpackOn = player.isJetpackOn()
+
+      local MplayerIsHeadlightOn = player.isHeadlightOn()
+
+
+      if type(klist) == "table" then
+          for _, v in pairs(klist) do
+              if MplayerID == v then
+                  NameRecorded = 1
+              end
+          end
+      end
+
+
+      if DEBUG then P("Orgs: "..#MplayerOrgIDs) end
+
+      for k, v in pairs(MplayerOrgIDs) do
+          local orginfo = system.getOrganization(v)
+          local dump = DumpTable(orginfo)
+          if DEBUG then P(k..": "..dump) end
+          OrgData.setStringValue(v,dump)
+      end
+
+
+      P("ID "..MplayerID.." "..MplayerName.." recorded")
+
+      local t = TableConstructor(MplayerName,MplayerMass,MplayerVolume,MplayerMaxVolume,MplayerOrgIDs,MplayerTime,MplayerTimeOffset,MplayerWrldPos,MplayerWrldVelo,MplayerParentID,MplayerIsSeated,MplayerSeatID,MplayerSprinting,MplayerIsJetpackOn,MplayerIsHeadlightOn)
+
+      SysData.setStringValue(MplayerID, DumpTable(t))
+
+      if DEBUG then P(SysData.getStringValue(MplayerID)) end
+
+      end)
+  - key: 4
+    filter:
+      slotKey: -5
+      signature: onStart()
+      args: []
+    code: |-
+      library.addEventHandlers(library)
+      library.addEventHandlers(system)
+      library.addEventHandlers(player)
+      library.addEventHandlers(construct)
+      library.addEventHandlers(unit)
+      library.addEventHandlers(core)
+      library.addEventHandlers(orgdata)
+      library.addEventHandlers(sysdata)
+  - key: 5
+    filter:
+      slotKey: -4
+      signature: onActionStart(action)
+      args:
+        - variable: "*"
+    code: system:triggerEvent('onActionStart',action)
+  - key: 6
+    filter:
+      slotKey: -4
+      signature: onActionLoop(action)
+      args:
+        - variable: "*"
+    code: system:triggerEvent('onActionLoop',action)
+  - key: 7
+    filter:
+      slotKey: -4
+      signature: onActionStop(action)
+      args:
+        - variable: "*"
+    code: system:triggerEvent('onActionStop',action)
+  - key: 8
+    filter:
+      slotKey: -4
+      signature: onUpdate()
+      args: []
+    code: system:triggerEvent('onUpdate')
+  - key: 9
+    filter:
+      slotKey: -4
+      signature: onFlush()
+      args: []
+    code: system:triggerEvent('onFlush')
+  - key: 10
+    filter:
+      slotKey: -4
+      signature: onInputText(text)
+      args:
+        - variable: "*"
+    code: system:triggerEvent('onInputText',text)
+  - key: 11
+    filter:
+      slotKey: -4
+      signature: onCameraChanged(mode)
+      args:
+        - variable: "*"
+    code: system:triggerEvent('onCameraChanged',mode)
+  - key: 12
+    filter:
+      slotKey: -3
+      signature: onParentChanged(oldId,newId)
+      args:
+        - variable: "*"
+        - variable: "*"
+    code: player:triggerEvent('onParentChanged',oldId,newId)
+  - key: 13
+    filter:
+      slotKey: -2
+      signature: onDocked(id)
+      args:
+        - variable: "*"
+    code: construct:triggerEvent('onDocked',id)
+  - key: 14
+    filter:
+      slotKey: -2
+      signature: onUndocked(id)
+      args:
+        - variable: "*"
+    code: construct:triggerEvent('onUndocked',id)
+  - key: 15
+    filter:
+      slotKey: -2
+      signature: onPlayerBoarded(id)
+      args:
+        - variable: "*"
+    code: construct:triggerEvent('onPlayerBoarded',id)
+  - key: 16
+    filter:
+      slotKey: -2
+      signature: onVRStationEntered(id)
+      args:
+        - variable: "*"
+    code: construct:triggerEvent('onVRStationEntered',id)
+  - key: 17
+    filter:
+      slotKey: -2
+      signature: onConstructDocked(id)
+      args:
+        - variable: "*"
+    code: construct:triggerEvent('onConstructDocked',id)
+  - key: 18
+    filter:
+      slotKey: -2
+      signature: onPvPTimer(active)
+      args:
+        - variable: "*"
+    code: construct:triggerEvent('onPvPTimer',active)
+  - key: 19
+    filter:
+      slotKey: -1
+      signature: onStop()
+      args: []
+    code: unit:triggerEvent('onStop')
+  - key: 20
+    filter:
+      slotKey: -1
+      signature: onTimer(timerId)
+      args:
+        - variable: "*"
+    code: unit:triggerEvent('onTimer',timerId)
+  - key: 21
+    filter:
+      slotKey: 0
+      signature: onStressChanged(stress)
+      args:
+        - variable: "*"
+    code: core:triggerEvent('onStressChanged',stress)
+  - key: 22
+    filter:
+      slotKey: -1
+      signature: onStart()
+      args: []
+    code: >-
+      
+
+      -- DU-Logger-Viewer by tobitege, based on Jason Bloomer's LUA scripts.
+
+      -- Wrapper for logging programming board script to log information of the
+
+      -- current "Player" (and their org's IDs) into 2 separate databanks.
+
+      -- This is basically a wrapper around the actual, main script in logger-main.k
+
+
+      -- First some setup code to allow debugging in VSCode
+
+      ---@diagnostic disable: param-type-mismatch
+
+      package.path = "lua/?.lua;util/?.lua;"..package.path
+
+
+      require('DU-logger-viewer:globals.lua')
+
+
+      Config.s_required = false
+
+      local status, err, _ = xpcall(function() require('DU-logger-viewer:startup.lua') end, traceback)
+
+      if not status then
+          P("[E] Error in startup!")
+          if err then P(err) end
+          unit.exit()
+          return
+      end
+
+
+      if #Config.databanks ~= 2 then
+          P("[E] 2 databanks must be linked!")
+      else
+          status, err, _ = xpcall(function() require('DU-logger-viewer:logger-library.lua') end, traceback)
+          if not status then
+              P("[E] Error in startup!")
+              if err then P(err) end
+              unit.exit()
+              return
+          end
+
+          SysData = Config.databanks[1]
+          OrgData = Config.databanks[2]
+          status, err, _ = xpcall(function() require('DU-logger-viewer:logger-main.lua') end, traceback)
+          if not status then
+              P("[E] Error in logger-main!")
+              if err then P(err) end
+          end
+      end
+
+      unit.exit()
+events: []
+methods: []
